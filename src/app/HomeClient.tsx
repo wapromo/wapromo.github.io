@@ -1,0 +1,70 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Bookmark, ChevronDown, Clock3, Compass, Heart, LayoutGrid, LockKeyhole, Menu, MessageCircle, Plus, Search, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
+
+type Category = { id: number; name: string; slug: string; count: number };
+type Post = { id: number; title: string; description: string; whatsappUrl: string; category: string; categoryId: number; author: string; image?: string | null; createdAt: string; likes: number; comments: number; liked?: boolean };
+type ModalType = "login" | "signup" | "add" | "contact" | null;
+
+export default function HomeClient() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [modal, setModal] = useState<ModalType>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 3000); };
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const [postResponse, categoryResponse] = await Promise.all([fetch(`/api/posts?q=${encodeURIComponent(query)}&sort=${sort}`), fetch("/api/categories")]);
+    if (postResponse.ok) setPosts(await postResponse.json());
+    if (categoryResponse.ok) setCategories(await categoryResponse.json());
+    setLoading(false);
+  }, [query, sort]);
+  useEffect(() => { const timer = window.setTimeout(loadData, 180); return () => window.clearTimeout(timer); }, [loadData]);
+  const like = async (post: Post) => {
+    const response = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
+    if (response.status === 401) return setModal("login");
+    if (!response.ok) return notify("Nie udało się zmienić polubienia.");
+    const data = await response.json();
+    setPosts((current) => current.map((item) => item.id === post.id ? { ...item, liked: data.liked, likes: data.likes } : item));
+  };
+  const categoryTotal = useMemo(() => categories.reduce((total, category) => total + category.count, 0), [categories]);
+
+  return <main className="site-shell">
+    <header className="topbar"><a className="brand" href="#top"><span className="brand-mark"><MessageCircle size={20} fill="currentColor" /></span><span>WA<b>PROMO</b></span></a><nav className={`nav-links ${menuOpen ? "is-open" : ""}`}><a className="active" href="#discover">Odkrywaj</a><a href="#categories">Kategorie</a><a href="#how">Jak to działa</a><button className="nav-add" onClick={() => setModal("add")}><Plus size={16} /> Dodaj grupę</button></nav><div className="top-actions"><button className="login-button" onClick={() => setModal("login")}><UserRound size={16} /> Zaloguj się</button><button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu"><Menu size={20} /></button></div></header>
+    <section className="hero" id="top"><div className="hero-copy"><div className="eyebrow"><Sparkles size={14} /> PUBLICZNY KATALOG SPOŁECZNOŚCI</div><h1>Znajdź swoją<br /><em>grupę.</em> <span>Rozwiń<br className="desktop-break" /> swój świat.</span></h1><p>Odkrywaj publiczne grupy WhatsApp, sprawdzaj opisy i dołączaj do rozmów, które naprawdę Cię interesują.</p><div className="hero-search"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Szukaj grup, tematów lub kategorii..." /><kbd>⌘ K</kbd></div><div className="hero-meta"><ShieldCheck size={16} color="#15934f" /><span>Linki są walidowane przed publikacją</span></div></div><div className="hero-art" aria-hidden="true"><div className="art-ring ring-one" /><div className="art-ring ring-two" /><div className="phone-card"><div className="phone-notch" /><div className="phone-head"><span className="brand-mark small"><MessageCircle size={14} fill="currentColor" /></span><b>WAPROMO</b><span>•••</span></div><div className="chat-bubble bubble-a">Odkryj społeczności <small>teraz</small></div><div className="chat-bubble bubble-b">Dołącz do rozmowy <small>bez spamu</small></div><div className="chat-bubble bubble-c">Twórz dobre grupy <small>razem</small></div><div className="phone-bottom"><span /><span /><span /></div></div><div className="floating-tag tag-top"><ShieldCheck size={15} /> Moderowane linki</div><div className="floating-tag tag-bottom"><MessageCircle size={15} /> Publiczny katalog</div></div></section>
+    <section className="stats-strip"><div><strong>{posts.length}</strong><span>wyników wyszukiwania</span></div><div><strong>{categoryTotal}</strong><span>opublikowanych wpisów</span></div><div><strong>{categories.length}</strong><span>dostępnych kategorii</span></div><div className="stats-note"><Compass size={17} /><span>Dane pobierane<br /><b>z bazy aplikacji</b></span></div></section>
+    <section className="content-section" id="discover"><div className="section-heading"><div><div className="eyebrow green"><Compass size={14} /> ODKRYWAJ</div><h2>Grupy z bazy <span>WAPROMO.</span></h2></div><div className="filter-row"><button className="filter-button" onClick={() => setSort(sort === "newest" ? "likes" : sort === "likes" ? "comments" : "newest")}><Clock3 size={15} /> {sort === "newest" ? "Najnowsze" : sort === "likes" ? "Najwięcej lajków" : "Najwięcej komentarzy"}<ChevronDown size={15} /></button><button className="view-button active" aria-label="Widok kart"><LayoutGrid size={17} /></button></div></div><div className="content-grid"><div className="post-list">{loading ? <div className="empty-state"><p>Ładowanie wpisów...</p></div> : posts.length ? posts.map((post) => <PostCard key={post.id} post={post} onLike={() => like(post)} onComment={() => notify("Komentarze są dostępne po zalogowaniu.")} />) : <div className="empty-state"><Search size={28} /><h3>Brak opublikowanych grup</h3><p>Nie ma jeszcze wpisów pasujących do wyszukiwania.</p><button className="load-more" onClick={() => setModal("add")}><Plus size={16} /> Dodaj pierwszy wpis</button></div>}</div><aside className="sidebar"><section className="side-block" id="categories"><div className="side-title"><span>Kategorie</span><LayoutGrid size={16} /></div><div className="category-cloud">{categories.length ? categories.map((category) => <button key={category.id} onClick={() => setQuery(category.name)}>{category.name}<small>{category.count}</small></button>) : <p className="muted-copy">Brak kategorii w bazie.</p>}</div></section><section className="join-card"><div className="join-icon"><Plus size={20} /></div><h3>Masz własną grupę?</h3><p>Dodaj publiczny link WhatsApp po zalogowaniu. Każdy wpis przechodzi walidację.</p><button onClick={() => setModal("add")}><Plus size={16} /> Dodaj grupę</button></section></aside></div></section>
+    <InfoSections onContact={() => setModal("contact")} />
+    <footer className="footer"><a className="brand" href="#top"><span className="brand-mark"><MessageCircle size={18} fill="currentColor" /></span><span>WA<b>PROMO</b></span></a><span>Katalog publicznych społeczności WhatsApp.</span><div><a href="#about">O nas</a><a href="#rules">Zasady</a><a href="#contact" onClick={() => setModal("contact")}>Kontakt</a></div></footer>
+    {modal && <Modal type={modal} categories={categories} onClose={() => setModal(null)} onSwitch={(type) => setModal(type)} onSuccess={(message) => { setModal(null); notify(message); loadData(); }} />}{toast && <div className="toast"><ShieldCheck size={17} /> {toast}</div>}
+  </main>;
+}
+
+function PostCard({ post, onLike, onComment }: { post: Post; onLike: () => void; onComment: () => void }) { return <article className="post-card"><div className="post-image" style={{ background: "linear-gradient(135deg,#d9f6e4,#ffffff)" }}><div className="post-image-pattern">✦</div><span className="category-pill">{post.category}</span><button className="bookmark" aria-label="Zapisz grupę"><Bookmark size={17} /></button></div><div className="post-body"><div className="post-topline"><span className="author-avatar">{post.author.slice(0, 2).toUpperCase()}</span><span>Dodano przez <b>{post.author}</b></span><time>{new Date(post.createdAt).toLocaleDateString("pl-PL")}</time></div><h3>{post.title}</h3><p>{post.description}</p><div className="post-footer"><button className={post.liked ? "liked" : ""} onClick={onLike}><Heart size={17} fill={post.liked ? "currentColor" : "none"} /> {post.likes}</button><button onClick={onComment}><MessageCircle size={17} /> {post.comments}</button><a className="join-button" href={post.whatsappUrl} target="_blank" rel="noreferrer">Dołącz <ArrowUpRight size={15} /></a></div></div></article>; }
+
+function InfoSections({ onContact }: { onContact: () => void }) { return <section className="info-section" id="how"><div className="info-grid"><article id="about"><div className="eyebrow green"><Sparkles size={14} /> O WAPROMO</div><h2>Katalog, który zaczyna się od <span>prawdziwych wpisów.</span></h2><p>WAPROMO porządkuje publiczne grupy WhatsApp w jednym miejscu. Nie tworzymy sztucznych kanałów ani nie pokazujemy zmyślonych statystyk.</p></article><article><div className="eyebrow green"><Compass size={14} /> JAK TO DZIAŁA</div><ol><li><b>Znajdź</b><span>Wyszukaj grupę po nazwie, opisie lub kategorii.</span></li><li><b>Sprawdź</b><span>Przeczytaj opis i zobacz dane wpisu.</span></li><li><b>Dołącz</b><span>Otwórz zweryfikowany link WhatsApp.</span></li></ol></article><article id="rules"><div className="eyebrow green"><ShieldCheck size={14} /> ZASADY</div><p>Dodawaj tylko publiczne i legalne grupy. Nie publikuj danych prywatnych, spamu ani linków naruszających prawo.</p><button className="text-button" onClick={onContact}>Zgłoś problem <ArrowUpRight size={15} /></button></article><article id="contact"><div className="eyebrow green"><MessageCircle size={14} /> KONTAKT</div><h3>Masz pytanie?</h3><p>Napisz do zespołu WAPROMO przez formularz kontaktowy.</p><button className="submit-button compact" onClick={onContact}>Napisz wiadomość <ArrowUpRight size={15} /></button></article></div></section>; }
+
+function Modal({ type, categories, onClose, onSwitch, onSuccess }: { type: Exclude<ModalType, null>; categories: Category[]; onClose: () => void; onSwitch: (type: "login" | "signup") => void; onSuccess: (message: string) => void }) {
+  const isAdd = type === "add", isContact = type === "contact";
+  const [error, setError] = useState("");
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setError("");
+    const data = Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>;
+    const payload: Record<string, string | number | boolean> = { ...data };
+    if (isAdd) payload.categoryId = Number(data.categoryId);
+    if (type === "login") payload.remember = data.remember === "on";
+    if (type === "signup") payload.confirmPassword = data.password;
+    const endpoint = isAdd ? "/api/posts" : isContact ? "/api/contact" : type === "login" ? "/api/auth/login" : "/api/auth/register";
+    const response = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    const result = await response.json();
+    if (!response.ok) return setError(result.error ?? "Nie udało się wysłać formularza.");
+    onSuccess(isAdd ? "Wpis został dodany." : isContact ? "Wiadomość została wysłana." : type === "login" ? "Zalogowano." : "Konto zostało utworzone.");
+  };
+  return <div className="modal-backdrop" onClick={onClose}><div className="modal" onClick={(event) => event.stopPropagation()}><button className="modal-close" onClick={onClose} aria-label="Zamknij"><X size={18} /></button><div className="modal-icon">{isAdd ? <Plus size={21} /> : isContact ? <MessageCircle size={20} /> : <LockKeyhole size={20} />}</div><div className="eyebrow green">{isAdd ? "NOWY WPIS" : isContact ? "KONTAKT" : type === "login" ? "WITAJ PONOWNIE" : "REJESTRACJA"}</div><h2>{isAdd ? "Dodaj grupę" : isContact ? "Napisz do nas" : type === "login" ? "Zaloguj się" : "Utwórz konto"}</h2>{error && <p className="form-error">{error}</p>}<form onSubmit={submit}>{isContact ? <><label>Imię lub nazwa<input name="name" required minLength={2} /></label><label>E-mail<input name="email" type="email" required /></label><label>Wiadomość<textarea name="message" required minLength={10} /></label></> : isAdd ? <><label>Nazwa<input name="title" required minLength={3} /></label><label>Link WhatsApp<input name="whatsappUrl" type="url" placeholder="https://chat.whatsapp.com/..." required /></label><label>Opis<textarea name="description" required minLength={10} /></label><label>Kategoria<select name="categoryId" required defaultValue=""><option value="" disabled>Wybierz kategorię</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label></> : <>{type === "signup" && <label>Login<input name="username" required minLength={3} /></label>}<label>{type === "login" ? "Login lub e-mail" : "E-mail"}<input name={type === "login" ? "identifier" : "email"} type={type === "login" ? "text" : "email"} required /></label><label>Hasło<input name="password" type="password" required minLength={8} /></label>{type === "login" && <label className="checkbox-label"><input name="remember" type="checkbox" /> Zapamiętaj mnie</label>}</>}</form><button className="submit-button" onClick={() => document.querySelector<HTMLFormElement>(".modal form")?.requestSubmit()}>{isAdd ? "Dodaj wpis" : isContact ? "Wyślij" : type === "login" ? "Zaloguj się" : "Załóż konto"} <ArrowUpRight size={16} /></button>{!isAdd && !isContact && <div className="modal-switch">{type === "login" ? "Nie masz konta?" : "Masz już konto?"} <button onClick={() => onSwitch(type === "login" ? "signup" : "login")}>{type === "login" ? "Zarejestruj się" : "Zaloguj się"}</button></div>}</div></div>;
+}

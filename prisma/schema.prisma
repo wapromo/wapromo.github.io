@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  email        String        @unique
+  passwordHash  String
+  avatar       String?
+  role         Role          @default(USER)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  banned       Boolean       @default(false)
+  posts        Post[]
+  likes        Like[]
+  comments     Comment[]
+  reports      Report[]
+  sessions     Session[]
+  registrationAudits RegistrationAudit[]
+  contactMessages ContactMessage[]
+}
+
+model RegistrationAudit {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  username     String
+  email        String
+  ip           String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([createdAt])
+  @@index([ip, createdAt])
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  title       String
+  description String
+  whatsappUrl String
+  categoryId  Int
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id])
+  likes       Like[]
+  comments    Comment[]
+  reports     Report[]
+  @@index([createdAt])
+  @@index([categoryId])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId, createdAt])
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  posts     Post[]
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  reason    String
+  status    ReportStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id
+  userId    Int
+  expiresAt DateTime
+  remember  Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([expiresAt])
+}
+
+model SecurityLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  username  String?
+  ip        String?
+  userAgent String?
+  country   String?
+  city      String?
+  event     String
+  success   Boolean
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  name      String
+  email     String
+  message   String
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([createdAt])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+}
