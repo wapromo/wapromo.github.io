@@ -1,4 +1,3 @@
-# WAPROMO
 
 Nowoczesny katalog publicznych grup i kanałów WhatsApp. Stack: Next.js App Router + TypeScript, Prisma + PostgreSQL, bcryptjs i Zod. Jeden projekt obsługuje UI oraz endpointy serwerowe.
 
