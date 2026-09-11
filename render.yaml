@@ -3,7 +3,7 @@ services:
     name: wapromo-api
     runtime: node
     plan: free
-    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run build
+    buildCommand: npm ci && npx prisma generate && npx prisma migrate deploy && npm run db:seed && npm run build
     startCommand: npm start
     healthCheckPath: /
     envVars:
@@ -17,6 +17,10 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://wapromo.github.io
+      - key: ADMIN_EMAIL
+        value: admin@wapromo.local
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: NODE_VERSION
         value: 20
 

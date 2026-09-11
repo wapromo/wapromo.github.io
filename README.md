@@ -22,6 +22,8 @@ Ustaw `DATABASE_URL` i długi losowy `SESSION_SECRET` w `.env`. Webhook Discord 
 
 Schemat znajduje się w `prisma/schema.prisma`; zawiera użytkowników, posty, kategorie, lajki z unikalnym `(userId, postId)`, komentarze, zgłoszenia, sesje i logi bezpieczeństwa.
 
+Seed tworzy wymagane kategorie oraz konto administratora `FilipPankiewicz`. Na Renderze ustaw `ADMIN_PASSWORD` jako sekret o długości co najmniej 8 znaków. Hasło nie jest zapisane w kodzie ani w migracji; do bazy trafia wyłącznie hash bcrypt. Profile użytkowników są przechowywane w tabeli `User`, a posty są powiązane przez `Post.userId`.
+
 ## Render i GitHub Pages
 
 `render.yaml` tworzy usługę `wapromo-api` oraz PostgreSQL. Po wdrożeniu Render ustawia `DATABASE_URL`, `SESSION_SECRET`, `FRONTEND_URL` i opcjonalny webhook. Komenda migracji produkcyjnej to `npx prisma migrate deploy`, a serwer uruchamia `npm start`.
