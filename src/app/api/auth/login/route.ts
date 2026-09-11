@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { limited, securityLog } from "@/lib/security";
 
+
 const schema = z.object({ identifier: z.string().trim().min(3).max(160), password: z.string().min(1).max(72), remember: z.boolean().optional() });
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
@@ -17,6 +18,6 @@ export async function POST(request: NextRequest) {
   const sessionId = crypto.randomUUID();
   await prisma.session.create({ data: { id: sessionId, userId: user.id, remember: Boolean(parsed.data.remember), expiresAt: new Date(Date.now() + (parsed.data.remember ? 30 : 1) * 24 * 60 * 60 * 1000) } });
   const response = NextResponse.json({ user: { id: user.id, username: user.username } });
-  response.cookies.set("session", sessionId, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: (parsed.data.remember ? 30 : 1) * 24 * 60 * 60 });
+  response.cookies.set("session", sessionId, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", path: "/", maxAge: (parsed.data.remember ? 30 : 1) * 24 * 60 * 60 });
   return response;
 }

@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { limited } from "@/lib/security";
 import { prisma } from "@/lib/prisma";
 
+
 const schema = z.object({ content: z.string().trim().min(1).max(500) });
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const comments = await prisma.comment.findMany({ where: { postId: Number((await params).id) }, orderBy: { createdAt: "asc" }, include: { user: { select: { username: true } } } });

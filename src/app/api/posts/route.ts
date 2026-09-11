@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { limited } from "@/lib/security";
 import { prisma } from "@/lib/prisma";
 
+
 const postSchema = z.object({ title: z.string().trim().min(3).max(100), description: z.string().trim().min(10).max(1000), whatsappUrl: z.string().url().refine((value) => /^https:\/\/(chat\.whatsapp\.com|whatsapp\.com)\//i.test(value), "Nieprawidłowy link WhatsApp."), categoryId: z.coerce.number().int().positive(), image: z.string().url().optional().or(z.literal("")) });
 
 export async function GET(request: NextRequest) {

@@ -6,6 +6,8 @@ import { ArrowUpRight, Bookmark, ChevronDown, Clock3, Compass, Heart, LayoutGrid
 type Category = { id: number; name: string; slug: string; count: number };
 type Post = { id: number; title: string; description: string; whatsappUrl: string; category: string; categoryId: number; author: string; image?: string | null; createdAt: string; likes: number; comments: number; liked?: boolean };
 type ModalType = "login" | "signup" | "add" | "contact" | null;
+const API_URL = (process.env.NODE_ENV === "production" ? (process.env.NEXT_PUBLIC_API_URL ?? "https://wapromo-api.onrender.com") : (process.env.NEXT_PUBLIC_API_URL ?? "")).replace(/\/$/, "");
+const api = (path: string) => `${API_URL}${path}`;
 
 export default function HomeClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -20,14 +22,14 @@ export default function HomeClient() {
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 3000); };
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [postResponse, categoryResponse] = await Promise.all([fetch(`/api/posts?q=${encodeURIComponent(query)}&sort=${sort}`), fetch("/api/categories")]);
+    const [postResponse, categoryResponse] = await Promise.all([fetch(api(`/api/posts?q=${encodeURIComponent(query)}&sort=${sort}`), { credentials: "include" }), fetch(api("/api/categories"), { credentials: "include" })]);
     if (postResponse.ok) setPosts(await postResponse.json());
     if (categoryResponse.ok) setCategories(await categoryResponse.json());
     setLoading(false);
   }, [query, sort]);
   useEffect(() => { const timer = window.setTimeout(loadData, 180); return () => window.clearTimeout(timer); }, [loadData]);
   const like = async (post: Post) => {
-    const response = await fetch(`/api/posts/${post.id}/like`, { method: "POST" });
+    const response = await fetch(api(`/api/posts/${post.id}/like`), { method: "POST", credentials: "include" });
     if (response.status === 401) return setModal("login");
     if (!response.ok) return notify("Nie udało się zmienić polubienia.");
     const data = await response.json();
@@ -61,7 +63,7 @@ function Modal({ type, categories, onClose, onSwitch, onSuccess }: { type: Exclu
     if (type === "login") payload.remember = data.remember === "on";
     if (type === "signup") payload.confirmPassword = data.password;
     const endpoint = isAdd ? "/api/posts" : isContact ? "/api/contact" : type === "login" ? "/api/auth/login" : "/api/auth/register";
-    const response = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    const response = await fetch(api(endpoint), { method: "POST", credentials: "include", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
     const result = await response.json();
     if (!response.ok) return setError(result.error ?? "Nie udało się wysłać formularza.");
     onSuccess(isAdd ? "Wpis został dodany." : isContact ? "Wiadomość została wysłana." : type === "login" ? "Zalogowano." : "Konto zostało utworzone.");

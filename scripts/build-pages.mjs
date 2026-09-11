@@ -1,0 +1,22 @@
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+
+const root = process.cwd();
+const temp = path.join(root, ".pages-build");
+await rm(temp, { recursive: true, force: true });
+await mkdir(path.join(temp, "src", "app"), { recursive: true });
+await cp(path.join(root, "src", "app", "HomeClient.tsx"), path.join(temp, "src", "app", "HomeClient.tsx"));
+await cp(path.join(root, "src", "app", "globals.css"), path.join(temp, "src", "app", "globals.css"));
+await cp(path.join(root, "src", "app", "layout.tsx"), path.join(temp, "src", "app", "layout.tsx"));
+await cp(path.join(root, "src", "app", "page.tsx"), path.join(temp, "src", "app", "page.tsx"));
+await cp(path.join(root, "tsconfig.json"), path.join(temp, "tsconfig.json"));
+await cp(path.join(root, "postcss.config.mjs"), path.join(temp, "postcss.config.mjs"));
+await writeFile(path.join(temp, "next.config.ts"), "import type { NextConfig } from \"next\";\nconst nextConfig: NextConfig = { output: \"export\", images: { unoptimized: true } };\nexport default nextConfig;\n");
+await writeFile(path.join(temp, "package.json"), JSON.stringify({ private: true, scripts: { build: "next build" }, dependencies: { next: "16.3.4", react: "19.2.8", "react-dom": "19.2.8", "lucide-react": "^1.45.0" }, devDependencies: { typescript: "^5", "@types/node": "^20", "@types/react": "^19", "@types/react-dom": "^19", tailwindcss: "^4", "@tailwindcss/postcss": "^4" } }, null, 2));
+const nextBin = path.join(root, "node_modules", "next", "dist", "bin", "next");
+const result = spawnSync(process.execPath, [nextBin, "build"], { cwd: temp, stdio: "inherit", env: { ...process.env, BUILD_TARGET: "pages" } });
+if (result.status !== 0) process.exit(result.status ?? 1);
+await rm(path.join(root, "out"), { recursive: true, force: true });
+await cp(path.join(temp, "out"), path.join(root, "out"), { recursive: true });
+await rm(temp, { recursive: true, force: true });

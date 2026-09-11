@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { limited } from "@/lib/security";
 import { prisma } from "@/lib/prisma";
 
+
 const schema = z.object({ name: z.string().trim().min(2).max(80), email: z.string().email().max(160), message: z.string().trim().min(10).max(2000) });
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";

@@ -1,13 +1,13 @@
 # WAPROMO
 
-Nowoczesny katalog publicznych grup i kanałów WhatsApp. Stack: Next.js App Router + TypeScript, Prisma + SQLite, bcryptjs i Zod. Jeden projekt obsługuje UI oraz endpointy serwerowe.
+Nowoczesny katalog publicznych grup i kanałów WhatsApp. Stack: Next.js App Router + TypeScript, Prisma + PostgreSQL, bcryptjs i Zod. Jeden projekt obsługuje UI oraz endpointy serwerowe.
 
 ## Start lokalny
 
 ```bash
 npm install
 Copy-Item .env.example .env
-npx prisma migrate dev --name init
+npx prisma generate
 npm run dev
 ```
 
@@ -21,6 +21,12 @@ Ustaw `DATABASE_URL` i długi losowy `SESSION_SECRET` w `.env`. Webhook Discord 
 - `POST /api/auth/login` tworzy sesję w bazie i cookie HttpOnly.
 - `POST /api/auth/logout` usuwa sesję i czyści cookie.
 
-Schemat znajduje się w `prisma/schema.prisma`; zawiera użytkowników, posty, kategorie, lajki z unikalnym `(userId, postId)`, komentarze, zgłoszenia, sesje i logi bezpieczeństwa. Produkcyjnie użyj PostgreSQL, `npx prisma migrate deploy`, HTTPS i rozproszonego rate limitera.
+Schemat znajduje się w `prisma/schema.prisma`; zawiera użytkowników, posty, kategorie, lajki z unikalnym `(userId, postId)`, komentarze, zgłoszenia, sesje i logi bezpieczeństwa.
+
+## Render i GitHub Pages
+
+`render.yaml` tworzy usługę `wapromo-api` oraz PostgreSQL. Po wdrożeniu Render ustawia `DATABASE_URL`, `SESSION_SECRET`, `FRONTEND_URL` i opcjonalny webhook. Komenda migracji produkcyjnej to `npx prisma migrate deploy`, a serwer uruchamia `npm start`.
+
+GitHub Actions buduje statyczny frontend przez `npm run build:pages` i publikuje go na GitHub Pages. Frontend używa `NEXT_PUBLIC_API_URL`; domyślnie wskazuje `https://wapromo-api.onrender.com`. Jeżeli Render nada inną domenę, ustaw w repozytorium GitHub variable `NEXT_PUBLIC_API_URL` na właściwy adres usługi i uruchom workflow ponownie. W ustawieniach repozytorium wybierz Pages source: **GitHub Actions**.
 
 Webhook podany w wiadomości nie został zapisany w repozytorium. Ponieważ został ujawniony, unieważnij go i wygeneruj nowy przed użyciem produkcyjnym.
