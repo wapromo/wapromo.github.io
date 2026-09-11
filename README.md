@@ -28,4 +28,8 @@ Schemat znajduje się w `prisma/schema.prisma`; zawiera użytkowników, posty, k
 
 GitHub Actions buduje statyczny frontend przez `npm run build:pages` i publikuje go na GitHub Pages. Frontend używa `NEXT_PUBLIC_API_URL`; domyślnie wskazuje `https://wapromo-api.onrender.com`. Jeżeli Render nada inną domenę, ustaw w repozytorium GitHub variable `NEXT_PUBLIC_API_URL` na właściwy adres usługi i uruchom workflow ponownie. W ustawieniach repozytorium wybierz Pages source: **GitHub Actions**.
 
+## Monitoring
+
+Endpoint `GET /api/health` zwraca prosty status usługi. Lokalny skrypt `npm run keep-alive` pinguję adres z `KEEP_ALIVE_URL` co 3 minuty. Uruchamiaj go na własnym monitoringu lub schedulerze; Render może nadal usypiać usługę zgodnie z zasadami wybranego planu.
+
 Webhook podany w wiadomości nie został zapisany w repozytorium. Ponieważ został ujawniony, unieważnij go i wygeneruj nowy przed użyciem produkcyjnym.
